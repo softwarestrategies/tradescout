@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeScout Quarterly Report</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 40px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            color: #1e40af;
+            font-size: 28px;
+        }
+        .period {
+            color: #6b7280;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .stat-card {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #2563eb;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #111827;
+        }
+        .stat-change {
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        .positive {
+            color: #059669;
+        }
+        .negative {
+            color: #dc2626;
+        }
+        .target-section {
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            border: 2px solid #059669;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        .target-section h2 {
+            margin-top: 0;
+            color: #065f46;
+        }
+        .recommendations {
+            background: #fef3c7;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        .recommendations h2 {
+            margin-top: 0;
+            color: #92400e;
+        }
+        .recommendations ul {
+            margin: 15px 0;
+            padding-left: 20px;
+        }
+        .recommendations li {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+        .trade-list {
+            margin: 30px 0;
+        }
+        .trade-item {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            border-left: 4px solid #6b7280;
+        }
+        .trade-item.winner {
+            border-left-color: #059669;
+        }
+        .trade-item.loser {
+            border-left-color: #dc2626;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            color: #6b7280;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>📊 Quarterly Performance Report</h1>
+        <div class="period">
+            <span th:text="${report.metrics().getPeriodStart()}">2024-01-01</span> to
+            <span th:text="${report.metrics().getPeriodEnd()}">2024-03-31</span>
+        </div>
+    </div>
+
+    <div class="summary-grid">
+        <div class="stat-card">
+            <div class="stat-label">Total P&L</div>
+            <div class="stat-value"
+                 th:classappend="${report.metrics().getTotalPnl().compareTo(T(java.math.BigDecimal).ZERO) > 0} ? 'positive' : 'negative'"
+                 th:text="'$' + ${report.metrics().getTotalPnl()}">
+                $2,400
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Return</div>
+            <div class="stat-value"
+                 th:classappend="${report.metrics().getReturnPercent() > 0} ? 'positive' : 'negative'"
+                 th:text="${#numbers.formatDecimal(report.metrics().getReturnPercent(), 1, 2)} + '%'">
+                4.14%
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Win Rate</div>
+            <div class="stat-value" th:text="${#numbers.formatDecimal(report.metrics().getWinRate(), 1, 1)} + '%'">
+                62.5%
+            </div>
+            <div class="stat-change">
+                <span th:text="${report.metrics().getWinningTrades()}">5</span> wins,
+                <span th:text="${report.metrics().getLosingTrades()}">3</span> losses
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Total Trades</div>
+            <div class="stat-value" th:text="${report.metrics().getTotalTrades()}">8</div>
+        </div>
+    </div>
+
+    <div class="target-section">
+        <h2 th:text="${report.targetAnalysis().onPaceFor15Percent()} ? '✅ On Target!' : '⚠️ Below Target'">
+            ✅ On Target!
+        </h2>
+        <p><strong>Assessment:</strong> <span th:text="${report.targetAnalysis().assessment()}">Doing well!</span></p>
+        <p><strong>Projected Annual Return:</strong>
+            <span th:text="${#numbers.formatDecimal(report.metrics().getProjectedAnnualReturn(), 1, 1)} + '%'">16.5%</span>
+        </p>
+        <p th:if="${!report.targetAnalysis().onPaceFor15Percent()}">
+            <strong>Monthly Return Needed:</strong>
+            <span th:text="${#numbers.formatDecimal(report.targetAnalysis().neededMonthlyReturn(), 1, 2)} + '%'">2.5%</span>
+        </p>
+    </div>
+
+    <div class="recommendations">
+        <h2>💡 Recommendations</h2>
+        <ul>
+            <li th:each="rec : ${report.recommendations()}" th:text="${rec}">
+                Continue current strategy
+            </li>
+        </ul>
+    </div>
+
+    <div class="trade-list" th:if="${!report.trades().isEmpty()}">
+        <h2>Recent Trades</h2>
+        <div th:each="trade : ${report.trades()}"
+             class="trade-item"
+             th:classappend="${trade.isWinner()} ? 'winner' : 'loser'">
+            <strong th:text="${trade.getSymbol()}">AAPL</strong> -
+            <span th:text="${trade.getEntryDate()}">2024-03-15</span> to
+            <span th:text="${trade.getExitDate()}">2024-03-20</span><br>
+            P&L: <strong th:text="'$' + ${trade.getPnl()}"
+                         th:classappend="${trade.isWinner()} ? 'positive' : 'negative'">$600</strong>
+            (<span th:text="${#numbers.formatDecimal(trade.getPnlPercent(), 1, 2)} + '%'">1.7%</span>)
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>
+            TradeScout by Software Strategies<br>
+            Professional Trading Opportunity Scanner
+        </p>
+        <p style="margin-top: 20px;">
+            This report is for informational purposes only. Past performance does not guarantee future results.
+        </p>
+    </div>
+</div>
+</body>
+</html>

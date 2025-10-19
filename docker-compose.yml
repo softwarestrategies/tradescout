@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tradescout-postgres
+    environment:
+      POSTGRES_DB: tradescout
+      POSTGRES_USER: tradescout_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-tradescout_pass_2024}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tradescout_user -d tradescout"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tradescout-network
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: tradescout-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@tradescout.local
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - tradescout-network
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  tradescout-network:
+    driver: bridge

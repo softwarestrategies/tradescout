@@ -1,0 +1,240 @@
+spring:
+  application:
+    name: tradescout
+
+  profiles:
+    active: local
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/tradescout
+    username: tradescout_user
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: TradeScoutHikariPool
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
+
+  mail:
+    host: smtp.gmail.com  # Google Workspace uses Gmail SMTP
+    port: 587
+    username: ${EMAIL_USERNAME}
+    password: ${EMAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+        transport:
+          protocol: smtp
+    test-connection: false
+
+
+quartz:
+  job-store-type: jdbc
+  jdbc:
+    initialize-schema: always
+  properties:
+    org:
+      quartz:
+        scheduler:
+          instanceName: TradeScoutScheduler
+          instanceId: AUTO
+        threadPool:
+          threadCount: 5
+        jobStore:
+          class: org.quartz.impl.jdbcjobstore.JobStoreTX
+          driverDelegateClass: org.quartz.impl.jdbcjobstore.PostgreSQLDelegate
+          tablePrefix: QRTZ_
+          isClustered: false
+          dataSource: quartzDataSource  # Add this line
+    dataSource:  # Add this section
+      quartzDataSource:
+        driver: org.postgresql.Driver
+        URL: jdbc:postgresql://localhost:5432/tradescout
+        user: tradescout_user
+        password: ${DB_PASSWORD:tradescout_pass_2024}
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${EMAIL_USERNAME:your-email@gmail.com}
+    password: ${EMAIL_PASSWORD:your-app-password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+        transport:
+          protocol: smtp
+
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# TradeScout Configuration
+tradescout:
+  trading:
+    # Capital & Position Sizing
+    initial-capital: 58000.00
+    position-size: 35000.00
+    target-profit-per-trade: 600.00
+    stop-loss-per-trade: 525.00
+
+    # Performance Targets
+    annual-target-percent: 15.0
+    quarterly-target-percent: 3.75
+
+    # Watchlist - High Volume Stocks
+    watchlist:
+      - AAPL   # Apple
+      - MSFT   # Microsoft
+      - GOOGL  # Alphabet
+      - AMZN   # Amazon
+      - NVDA   # Nvidia
+      - META   # Meta
+      - TSLA   # Tesla
+      - AMD    # AMD
+      - INTC   # Intel
+      - NFLX   # Netflix
+      - CRM    # Salesforce
+      - BAC    # Bank of America
+      - JPM    # JP Morgan
+      - GS     # Goldman Sachs
+      - DIS    # Disney
+      - WMT    # Walmart
+      - NKE    # Nike
+      - PLTR   # Palantir
+      - COIN   # Coinbase
+      - SPY    # S&P 500 ETF
+      - QQQ    # Nasdaq 100 ETF
+
+    # Anomaly Detection Parameters
+    detection:
+      min-confidence: 70.0
+      min-price-zscore: -2.5
+      min-volume-zscore: -1.5
+      lookback-days: 180
+
+    # Risk Management
+    risk:
+      max-trades-per-week: 2
+      max-trades-per-month: 8
+      max-daily-loss: 1000.00
+      max-monthly-loss: 2500.00
+      max-consecutive-losses: 2
+
+    # Trading Rules
+    rules:
+      no-friday-entries: true
+      no-earnings-week: true
+      no-fomc-week: true
+      require-manual-review: true
+
+    # Scheduling
+    schedule:
+      daily-maintenance-cron: "0 0 19 * * ?"  # 7:00 PM Pacific daily
+      daily-maintenance-timezone: America/Los_Angeles
+      quarterly-report-cron: "0 0 8 1 1,4,7,10 ?"  # First day of quarter at 8 AM
+
+    # Email Alerts
+    email:
+      enabled: true  # Make sure this is true
+      to: ${ALERT_EMAIL:henrydall@softwarestrategies.io}
+      from: ${EMAIL_USERNAME:henrydall@softwarestrategies.io}
+      alert-cooldown-minutes: 60
+      include-links: true
+
+
+logging:
+  level:
+    root: INFO
+    com.softwarestrategies.tradescout: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  file:
+    name: logs/tradescout.log
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+---
+# Docker profile
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+  datasource:
+    url: jdbc:postgresql://postgres:5432/tradescout
+    username: tradescout_user
+    password: ${DB_PASSWORD:tradescout_pass_2024}
+
+logging:
+  level:
+    root: INFO
+    com.softwarestrategies.tradescout: INFO
+
+---
+# Production profile
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  jpa:
+    show-sql: false
+
+logging:
+  level:
+    root: WARN
+    com.softwarestrategies.tradescout: INFO
